@@ -1,0 +1,4 @@
+deepseek:
+  api-key: sk-5721de780bb7409bb00f3341dcb73403
+  model: deepseek-chat
+  base-url: https://api.deepseek.com  # 可选，默认为官方 API 地址
