@@ -5,12 +5,13 @@ import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.buf.StringUtils;
 import org.gitlab4j.api.GitLabApiException;
+import org.gitlab4j.api.models.Commit;
 import org.gitlab4j.api.models.CompareResults;
-import org.gitlab4j.api.webhook.EventCommit;
 import org.gitlab4j.api.webhook.PushEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,10 +41,27 @@ public class ReviewService {
 
         log.info("Chat completion response: {}", chat);
 
-        String title = "### 🚀 " + pushEvent.getProject().getName() + ": Push\n\n";
-        title += "#### 提交记录:\n";
+        StringBuilder sb = new StringBuilder();
+        sb.append("### 🚀 ").append(pushEvent.getProject().getName())
+                .append( ": Push\n\n").append("#### 提交记录:\n");
 
-        dingDingService.sendMessageWebhook("text", chat.choices().get(0).message().content());
+        for (Commit commit : compareResults.getCommits()) {
+            String message = commit.getMessage().strip();
+            String author = commit.getAuthorName();
+            Date timestamp = commit.getTimestamp();
+            String url = commit.getUrl();
+            sb.append("- **提交信息**: ").append(message).append("\n")
+                    .append("- **提交者**: ").append(author).append("\n")
+                    .append("- **时间**: ").append(timestamp).append("\n")
+                    .append("- [查看提交详情](").append(url).append(")\n\n");
+
+        }
+
+        String content = chat.choices().get(0).message().content();
+        sb.append("#### AI Code Review 结果: \n").append(content);
+
+        String title = pushEvent.getProject().getName() + " Push Event";
+        dingDingService.sendMessageWebhook(title, sb.toString());
 
     }
 
