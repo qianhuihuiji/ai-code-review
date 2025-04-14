@@ -1,10 +1,3 @@
-deepseek:
-  api-key:
-  model: deepseek-chat
-  base-url: https://api.deepseek.com  # 可选，默认为官方 API 地址
-server:
-  port: 5001
-
 prompt:
   system: |-
     你是一位资深的软件开发工程师，专注于代码的规范性、功能性、安全性和稳定性。本次任务是对员工的代码进行审查，具体要求如下：
