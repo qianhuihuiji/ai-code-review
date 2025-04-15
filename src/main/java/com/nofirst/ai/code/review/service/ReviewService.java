@@ -7,6 +7,7 @@ import org.apache.tomcat.util.buf.StringUtils;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Commit;
 import org.gitlab4j.api.models.CompareResults;
+import org.gitlab4j.api.webhook.Event;
 import org.gitlab4j.api.webhook.PushEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,40 +29,52 @@ public class ReviewService {
     @Autowired
     private GitlabService gitlabService;
 
-    public void review(PushEvent pushEvent, String gitlabUrl, String gitlabToken) throws ApiException, GitLabApiException {
+    public void review(Event event, String gitlabUrl, String gitlabToken) {
         log.info("Push Hook event received");
-        CompareResults compareResults = gitlabService.getCompareResults(pushEvent, gitlabUrl, gitlabToken);
-        List<String> collect = compareResults.getCommits().stream()
-                .map(commit -> commit.getMessage().strip()) // 获取并清理消息
-                .collect(Collectors.toList());
+        if (event instanceof PushEvent pushEvent) {
+            CompareResults compareResults = null;
+            try {
+                compareResults = gitlabService.getCompareResults(pushEvent, gitlabUrl, gitlabToken);
+            } catch (GitLabApiException e) {
+                throw new RuntimeException(e);
+            }
+            List<String> collect = compareResults.getCommits().stream()
+                    .map(commit -> commit.getMessage().strip()) // 获取并清理消息
+                    .collect(Collectors.toList());
 
-        String commitsText = StringUtils.join(collect, ';');
-        String changes = compareResults.getDiffs().toString();
-        ChatCompletionResponse chat = deepseekService.chat(changes, commitsText);
+            String commitsText = StringUtils.join(collect, ';');
+            String changes = compareResults.getDiffs().toString();
+            ChatCompletionResponse chat = deepseekService.chat(changes, commitsText);
 
-        log.info("Chat completion response: {}", chat);
+            log.info("Chat completion response: {}", chat);
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("### 🚀 ").append(pushEvent.getProject().getName())
-                .append( ": Push\n\n").append("#### 提交记录:\n");
+            StringBuilder sb = new StringBuilder();
+            sb.append("### 🚀 ").append(pushEvent.getProject().getName())
+                    .append(": Push\n\n").append("#### 提交记录:\n");
 
-        for (Commit commit : compareResults.getCommits()) {
-            String message = commit.getMessage().strip();
-            String author = commit.getAuthorName();
-            Date timestamp = commit.getTimestamp();
-            String url = commit.getUrl();
-            sb.append("- **提交信息**: ").append(message).append("\n")
-                    .append("- **提交者**: ").append(author).append("\n")
-                    .append("- **时间**: ").append(timestamp).append("\n")
-                    .append("- [查看提交详情](").append(url).append(")\n\n");
+            for (Commit commit : compareResults.getCommits()) {
+                String message = commit.getMessage().strip();
+                String author = commit.getAuthorName();
+                Date timestamp = commit.getTimestamp();
+                String url = commit.getUrl();
+                sb.append("- **提交信息**: ").append(message).append("\n")
+                        .append("- **提交者**: ").append(author).append("\n")
+                        .append("- **时间**: ").append(timestamp).append("\n")
+                        .append("- [查看提交详情](").append(url).append(")\n\n");
 
+            }
+
+            String content = chat.choices().get(0).message().content();
+            sb.append("#### AI Code Review 结果: \n").append(content);
+
+            String title = pushEvent.getProject().getName() + " Push Event";
+            try {
+                dingDingService.sendMessageWebhook(title, sb.toString());
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        String content = chat.choices().get(0).message().content();
-        sb.append("#### AI Code Review 结果: \n").append(content);
-
-        String title = pushEvent.getProject().getName() + " Push Event";
-        dingDingService.sendMessageWebhook(title, sb.toString());
 
     }
 

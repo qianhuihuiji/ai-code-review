@@ -1,4 +1,4 @@
-package com.nofirst.ai.code.review.configuration;
+package com.nofirst.ai.code.review.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

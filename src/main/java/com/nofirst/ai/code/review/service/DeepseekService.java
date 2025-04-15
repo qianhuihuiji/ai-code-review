@@ -1,11 +1,10 @@
 package com.nofirst.ai.code.review.service;
 
-import com.nofirst.ai.code.review.configuration.PromptTemplatesConfiguration;
+import com.nofirst.ai.code.review.config.PromptTemplatesConfiguration;
 import io.github.pigmesh.ai.deepseek.core.DeepSeekClient;
 import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionModel;
 import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionRequest;
 import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionResponse;
-import io.github.pigmesh.ai.deepseek.core.chat.ResponseFormatType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
