@@ -12,4 +12,5 @@ public class PromptTemplatesConfiguration {
     private String system;
 
     private String user;
+
 }

@@ -1,6 +1,6 @@
 package com.nofirst.ai.code.review.controller;
 
-import com.nofirst.ai.code.review.service.DisruptorMqService;
+import com.nofirst.ai.code.review.service.DisruptorService;
 import com.taobao.api.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.gitlab4j.api.GitLabApiException;
@@ -16,13 +16,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReviewController {
 
     @Autowired
-    private DisruptorMqService disruptorMqService;
+    private DisruptorService disruptorService;
 
     @PostMapping(value = "/review/webhook")
     public void review(@RequestHeader(value = "X-Gitlab-Instance") String gitlabUrl,
                        @RequestHeader(value = "X-Gitlab-Token") String gitlabToken,
                        @RequestBody Event event) throws ApiException, GitLabApiException {
         log.info("review event:{}", event);
-        disruptorMqService.sendMsg(event, gitlabUrl, gitlabToken);
+        disruptorService.sendMsg(event, gitlabUrl, gitlabToken);
     }
 }

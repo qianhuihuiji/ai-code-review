@@ -2,24 +2,28 @@ package com.nofirst.ai.code.review.service;
 
 import com.lmax.disruptor.RingBuffer;
 import com.nofirst.ai.code.review.disruptor.MessageModel;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gitlab4j.api.webhook.Event;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Component
 @Service
-public class DisruptorMqService {
+@AllArgsConstructor
+public class DisruptorService {
 
-
-    @Autowired
     private RingBuffer<MessageModel> messageModelRingBuffer;
 
-
+    /**
+     * Send msg.
+     *
+     * @param event       the event
+     * @param gitlabUrl   the gitlab url
+     * @param gitlabToken the gitlab token
+     */
     public void sendMsg(Event event, String gitlabUrl, String gitlabToken) {
-
         log.info("投递消息，消息内容: {}", event);
         //获取下一个Event槽的下标
         long sequence = messageModelRingBuffer.next();
