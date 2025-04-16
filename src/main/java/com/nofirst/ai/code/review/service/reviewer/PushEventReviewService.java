@@ -40,11 +40,14 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
 
         String commitsText = StringUtils.join(collect, ';');
         String changes = compareResults.getDiffs().toString();
+
+        log.info("Chat begin");
+
         ChatCompletionResponse chat = deepseekService.chat(changes, commitsText);
 
-        log.info("Chat completion response: {}", chat);
+        log.info("Chat end,Chat completion response: {}", chat);
 
-        String content = chat.content();
+        String content = extractMarkdown(chat.content());
         this.addPushNote(pushEvent, gitlabUrl, gitlabToken, content);
 
         StringBuilder sb = new StringBuilder();
@@ -67,6 +70,18 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
 
         String title = pushEvent.getProject().getName() + " Push Event";
         dingDingService.sendMessageWebhook(title, sb.toString());
+    }
+
+    public static String extractMarkdown(String reviewResult) {
+        String startMarker = "```markdown";
+        String endMarker = "```";
+
+        if (reviewResult.startsWith(startMarker) && reviewResult.endsWith(endMarker)) {
+            int start = startMarker.length();
+            int end = reviewResult.length() - endMarker.length();
+            return reviewResult.substring(start, end).trim();
+        }
+        return reviewResult;
     }
 
     public void addPushNote(PushEvent pushEvent, String gitlabUrl, String gitlabToken, String content) {

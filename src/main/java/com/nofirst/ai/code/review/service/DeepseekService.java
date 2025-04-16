@@ -5,28 +5,25 @@ import io.github.pigmesh.ai.deepseek.core.DeepSeekClient;
 import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionModel;
 import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionRequest;
 import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@AllArgsConstructor
 public class DeepseekService {
 
-    @Autowired
-    private PromptTemplatesConfiguration promptTemplatesConfiguration;
+    private final PromptTemplatesConfiguration promptTemplatesConfiguration;
+    private final DeepSeekClient deepSeekClient;
 
-    @Autowired
-    private DeepSeekClient deepSeekClient;
-
-    public ChatCompletionResponse chat(String changes, String commitsText) {
+    public ChatCompletionResponse chat(String diffsText, String commitsText) {
         String systemPrompt = promptTemplatesConfiguration.getSystem();
 
         String userPrompt = promptTemplatesConfiguration.getUser();
-        String replaced = userPrompt.replace("{diffs_text}", changes);
+        String replaced = userPrompt.replace("{diffs_text}", diffsText);
         String real = replaced.replace("{commits_text}", commitsText);
 
-
         ChatCompletionRequest request = ChatCompletionRequest.builder()
-                .model(ChatCompletionModel.DEEPSEEK_CHAT)
+                .model(ChatCompletionModel.DEEPSEEK_REASONER)
                 .addSystemMessage(systemPrompt)
                 .addUserMessage(real)
                 .build();
