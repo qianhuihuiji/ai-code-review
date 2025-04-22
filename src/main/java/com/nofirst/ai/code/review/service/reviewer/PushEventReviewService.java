@@ -1,5 +1,7 @@
 package com.nofirst.ai.code.review.service.reviewer;
 
+import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDAO;
+import com.nofirst.ai.code.review.repository.entity.ReviewResultInfo;
 import com.nofirst.ai.code.review.service.DeepseekService;
 import com.nofirst.ai.code.review.service.DingDingService;
 import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionResponse;
@@ -19,6 +21,8 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,9 +33,11 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
     private final DingDingService dingDingService;
     private final DeepseekService deepseekService;
 
+    private final IReviewResultInfoDAO reviewResultInfoDAO;
+
 
     @Override
-    public void review(PushEvent pushEvent, String gitlabUrl, String gitlabToken) {
+    public void review(PushEvent pushEvent, String gitlabUrl, String gitlabToken, Date dtNow) {
         log.info("Push Hook event received");
         CompareResults compareResults = this.getCompareResults(pushEvent, gitlabUrl, gitlabToken);
         List<String> collect = compareResults.getCommits().stream()
@@ -48,6 +54,7 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
         log.info("Chat end,Chat completion response: {}", chat);
 
         String content = extractMarkdown(chat.content());
+        int score = parseReviewScore(chat.content());
         this.addPushNote(pushEvent, gitlabUrl, gitlabToken, content);
 
         StringBuilder sb = new StringBuilder();
@@ -63,8 +70,17 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
                     .append("- **提交者**: ").append(author).append("\n")
                     .append("- **时间**: ").append(timestamp).append("\n")
                     .append("- [查看提交详情](").append(url).append(")\n\n");
-
         }
+
+        ReviewResultInfo reviewResultInfo = new ReviewResultInfo();
+        reviewResultInfo.setObjectKind(pushEvent.getObjectKind());
+        reviewResultInfo.setUserId(pushEvent.getUserId());
+        reviewResultInfo.setUsername(pushEvent.getUserUsername());
+        reviewResultInfo.setOriginInfo(pushEvent.toString());
+        reviewResultInfo.setReviewResult(content);
+        reviewResultInfo.setReviewScore(score);
+        reviewResultInfo.setCreateTime(dtNow);
+        reviewResultInfoDAO.save(reviewResultInfo);
 
         sb.append("#### AI Code Review 结果: \n").append(content);
 
@@ -82,6 +98,21 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
             return reviewResult.substring(start, end).trim();
         }
         return reviewResult;
+    }
+
+    public static int parseReviewScore(String reviewText) {
+        if (reviewText == null || reviewText.isEmpty()) {
+            return 0;
+        }
+
+        Pattern pattern = Pattern.compile("总分[:：]\\s*(\\d+)分?");
+        Matcher matcher = pattern.matcher(reviewText);
+
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        } else {
+            return 0;
+        }
     }
 
     public void addPushNote(PushEvent pushEvent, String gitlabUrl, String gitlabToken, String content) {

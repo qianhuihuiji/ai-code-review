@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.gitlab4j.api.webhook.MergeRequestEvent;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+
 /**
  * The type Merge request event review service.
  */
@@ -20,7 +22,7 @@ public class MergeRequestEventReviewService implements EventReviewer<MergeReques
 
 
     @Override
-    public void review(MergeRequestEvent mergeRequestEvent, String gitlabUrl, String gitlabToken) {
+    public void review(MergeRequestEvent mergeRequestEvent, String gitlabUrl, String gitlabToken, Date dtNow) {
         log.info("Merge Request Hook event received");
         // do nothing
     }
