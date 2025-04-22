@@ -7,6 +7,11 @@ server:
 dingtalk:
   webhook:
 spring:
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/xx?currentSchema=public&allowMultiQueries=true
+    driver-class-name: org.postgresql.Driver
+    username:
+    password:
   profiles:
     include:
       - prompt
