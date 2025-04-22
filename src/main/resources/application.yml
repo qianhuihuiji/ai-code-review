@@ -2,6 +2,12 @@ deepseek:
   api-key:
   model: deepseek-chat
   base-url: https://api.deepseek.com  # 可选，默认为官方 API 地址
+  log-requests: true
+  log-responses: true
+  log-level: DEBUG
+  connect-timeout: 60
+  read-timeout: 60
+  call-timeout: 60
 server:
   port: 5001
 dingtalk:
