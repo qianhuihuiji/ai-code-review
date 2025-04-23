@@ -19,7 +19,7 @@ public class EvaluationReportConvertUtil {
      */
     public static String convertToMarkdown(EvaluationReport report) {
         StringBuilder md = new StringBuilder();
-        md.append("# 评估报告总览\n\n**总分**: ").append(report.getTotalScore()).append("\n\n---\n\n");
+        md.append("# Auto Code Review Result\n\n**总分**: ").append(report.getTotalScore()).append("\n\n---\n\n");
 
         int sectionIndex = 1; // 评分项序号从1开始
         for (Result result : report.getResults()) {

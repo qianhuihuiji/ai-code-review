@@ -8,6 +8,7 @@ import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.buf.StringUtils;
+import org.gitlab4j.api.models.Commit;
 import org.gitlab4j.api.models.CompareResults;
 import org.springframework.stereotype.Service;
 
@@ -49,7 +50,7 @@ public class DeepseekService {
 
     private static String getCommitsText(CompareResults compareResults) {
         List<String> collect = compareResults.getCommits().stream()
-                .map(commit -> commit.getMessage().strip())
+                .map(Commit::getMessage)
                 .collect(Collectors.toList());
 
         return StringUtils.join(collect, ';');

@@ -28,7 +28,8 @@ public class ReviewDispatcherService {
      */
     public void review(Event event, String gitlabUrl, String gitlabToken) {
         Date date = new Date();
-        if (event instanceof PushEvent pushEvent) {
+        if (event instanceof PushEvent) {
+            PushEvent pushEvent = (PushEvent) event;
             pushEventReviewService.review(pushEvent, gitlabUrl, gitlabToken, date);
         }
     }

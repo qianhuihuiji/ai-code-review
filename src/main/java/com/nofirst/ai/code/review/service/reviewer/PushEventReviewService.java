@@ -48,7 +48,7 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
     @Override
     public void review(PushEvent pushEvent, String gitlabUrl, String gitlabToken, Date dtNow) {
         log.info("Push Hook event received");
-        
+
         CompareResults compareResults = this.getCompareResults(pushEvent, gitlabUrl, gitlabToken);
 
         ChatCompletionResponse chatResponse = deepseekService.chat(compareResults);
@@ -113,7 +113,7 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
                 .append(": Push\n\n").append("#### 提交记录:\n");
 
         for (Commit commit : compareResults.getCommits()) {
-            String message = commit.getMessage().strip();
+            String message = commit.getMessage();
             String author = commit.getAuthorName();
             Date timestamp = commit.getTimestamp();
             String url = commit.getUrl();
@@ -161,7 +161,7 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
             String after = pushEvent.getAfter();
             EventProject project = pushEvent.getProject();
 
-            compare = gitLabApi.getRepositoryApi().compare(project.getId(), before, after, project.getId(), true);
+            compare = gitLabApi.getRepositoryApi().compare(project.getId(), before, after, true);
             log.info("Compare results: {}", compare);
             return compare;
         } catch (GitLabApiException e) {
