@@ -1,13 +1,14 @@
 package com.nofirst.ai.code.review.service.reviewer;
 
+import com.nofirst.ai.code.review.model.chat.EvaluationReport;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDAO;
 import com.nofirst.ai.code.review.repository.entity.ReviewResultInfo;
 import com.nofirst.ai.code.review.service.DeepseekService;
 import com.nofirst.ai.code.review.service.DingDingService;
+import com.nofirst.ai.code.review.util.EvaluationReportConvertUtil;
 import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.buf.StringUtils;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Comment;
@@ -21,9 +22,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.Date;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -40,23 +38,40 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
     public void review(PushEvent pushEvent, String gitlabUrl, String gitlabToken, Date dtNow) {
         log.info("Push Hook event received");
         CompareResults compareResults = this.getCompareResults(pushEvent, gitlabUrl, gitlabToken);
-        List<String> collect = compareResults.getCommits().stream()
-                .map(commit -> commit.getMessage().strip()) // 获取并清理消息
-                .collect(Collectors.toList());
 
-        String commitsText = StringUtils.join(collect, ';');
-        String changes = compareResults.getDiffs().toString();
+        ChatCompletionResponse chatResponse = deepseekService.chat(compareResults);
 
-        log.info("Chat begin");
+        EvaluationReport evaluationReport = EvaluationReportConvertUtil.convertFromChatContent(chatResponse.content());
 
-        ChatCompletionResponse chat = deepseekService.chat(changes, commitsText);
+        this.storeReviewResult(pushEvent, dtNow, evaluationReport.getMarkdownContent(), evaluationReport);
 
-        log.info("Chat end,Chat completion response: {}", chat);
+        this.addPushNote(pushEvent, gitlabUrl, gitlabToken, evaluationReport.getMarkdownContent());
 
-        String content = extractMarkdown(chat.content());
-        int score = parseReviewScore(chat.content());
-        this.addPushNote(pushEvent, gitlabUrl, gitlabToken, content);
+        this.sendDingDingMessage(pushEvent, compareResults, evaluationReport.getMarkdownContent());
+    }
 
+    private void storeReviewResult(PushEvent pushEvent, Date dtNow, String markdownContent, EvaluationReport evaluationReport) {
+        ReviewResultInfo reviewResultInfo = new ReviewResultInfo();
+        reviewResultInfo.setObjectKind(pushEvent.getObjectKind());
+        reviewResultInfo.setUserId(pushEvent.getUserId());
+        reviewResultInfo.setUsername(pushEvent.getUserUsername());
+        reviewResultInfo.setOriginInfo(pushEvent.toString());
+        reviewResultInfo.setReviewResult(markdownContent);
+        reviewResultInfo.setReviewScore(evaluationReport.getTotalScore());
+        reviewResultInfo.setCreateTime(dtNow);
+        reviewResultInfoDAO.save(reviewResultInfo);
+
+        
+    }
+
+    private void sendDingDingMessage(PushEvent pushEvent, CompareResults compareResults, String markdownContent) {
+        StringBuilder sb = getStringBuilder(pushEvent, compareResults, markdownContent);
+
+        String title = pushEvent.getProject().getName() + " Push Event";
+        dingDingService.sendMessageWebhook(title, sb.toString());
+    }
+
+    private StringBuilder getStringBuilder(PushEvent pushEvent, CompareResults compareResults, String markdownContent) {
         StringBuilder sb = new StringBuilder();
         sb.append("### 🚀 ").append(pushEvent.getProject().getName())
                 .append(": Push\n\n").append("#### 提交记录:\n");
@@ -72,47 +87,8 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
                     .append("- [查看提交详情](").append(url).append(")\n\n");
         }
 
-        ReviewResultInfo reviewResultInfo = new ReviewResultInfo();
-        reviewResultInfo.setObjectKind(pushEvent.getObjectKind());
-        reviewResultInfo.setUserId(pushEvent.getUserId());
-        reviewResultInfo.setUsername(pushEvent.getUserUsername());
-        reviewResultInfo.setOriginInfo(pushEvent.toString());
-        reviewResultInfo.setReviewResult(content);
-        reviewResultInfo.setReviewScore(score);
-        reviewResultInfo.setCreateTime(dtNow);
-        reviewResultInfoDAO.save(reviewResultInfo);
-
-        sb.append("#### AI Code Review 结果: \n").append(content);
-
-        String title = pushEvent.getProject().getName() + " Push Event";
-        dingDingService.sendMessageWebhook(title, sb.toString());
-    }
-
-    public static String extractMarkdown(String reviewResult) {
-        String startMarker = "```markdown";
-        String endMarker = "```";
-
-        if (reviewResult.startsWith(startMarker) && reviewResult.endsWith(endMarker)) {
-            int start = startMarker.length();
-            int end = reviewResult.length() - endMarker.length();
-            return reviewResult.substring(start, end).trim();
-        }
-        return reviewResult;
-    }
-
-    public static int parseReviewScore(String reviewText) {
-        if (reviewText == null || reviewText.isEmpty()) {
-            return 0;
-        }
-
-        Pattern pattern = Pattern.compile("总分[:：]\\s*(\\d+)分?");
-        Matcher matcher = pattern.matcher(reviewText);
-
-        if (matcher.find()) {
-            return Integer.parseInt(matcher.group(1));
-        } else {
-            return 0;
-        }
+        sb.append(markdownContent);
+        return sb;
     }
 
     public void addPushNote(PushEvent pushEvent, String gitlabUrl, String gitlabToken, String content) {
