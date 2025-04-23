@@ -72,7 +72,7 @@ public class EvaluationReportConvertUtil {
      */
     public static EvaluationReport convertFromChatContent(String chatContent) {
         String pureJson = pureJson(chatContent);
-        EvaluationReport report = null;
+        EvaluationReport report;
         ObjectMapper mapper = new ObjectMapper();
         try {
             report = mapper.readValue(pureJson, EvaluationReport.class);
