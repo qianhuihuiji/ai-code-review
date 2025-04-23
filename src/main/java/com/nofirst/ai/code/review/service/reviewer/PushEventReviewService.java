@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Comment;
-import org.gitlab4j.api.models.Commit;
 import org.gitlab4j.api.models.CompareResults;
 import org.gitlab4j.api.webhook.EventCommit;
 import org.gitlab4j.api.webhook.EventProject;
@@ -112,9 +111,9 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
         sb.append("### 🚀 ").append(pushEvent.getProject().getName())
                 .append(": Push\n\n").append("#### 提交记录:\n");
 
-        for (Commit commit : compareResults.getCommits()) {
+        for (EventCommit commit : pushEvent.getCommits()) {
             String message = commit.getMessage();
-            String author = commit.getAuthorName();
+            String author = commit.getAuthor().getName();
             Date timestamp = commit.getTimestamp();
             String url = commit.getUrl();
             sb.append("- **提交信息**: ").append(message).append("\n")
