@@ -7,6 +7,7 @@ import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDAO;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDetailAdviceDAO;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDetailDAO;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDetailQuestionDAO;
+import com.nofirst.ai.code.review.repository.entity.ReviewConfigInfo;
 import com.nofirst.ai.code.review.repository.entity.ReviewResultInfo;
 import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetail;
 import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetailAdvice;
@@ -24,12 +25,16 @@ import org.gitlab4j.api.models.CompareResults;
 import org.gitlab4j.api.webhook.EventCommit;
 import org.gitlab4j.api.webhook.EventProject;
 import org.gitlab4j.api.webhook.PushEvent;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Date;
 import java.util.List;
 
+/**
+ * The type Push event review service.
+ */
 @Service
 @Slf4j
 @AllArgsConstructor
@@ -45,10 +50,11 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
 
 
     @Override
-    public void review(PushEvent pushEvent, String gitlabUrl, String gitlabToken, Date dtNow) {
-        log.info("Push Hook event received");
+    public void review(PushEvent pushEvent, ReviewConfigInfo reviewConfig) {
+        Date dtNow = new Date();
+        log.info("Push Hook event begin review: {}", dtNow);
 
-        CompareResults compareResults = this.getCompareResults(pushEvent, gitlabUrl, gitlabToken);
+        CompareResults compareResults = this.getCompareResults(pushEvent, reviewConfig);
 
         ChatCompletionResponse chatResponse = deepseekService.chat(compareResults);
 
@@ -56,9 +62,9 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
 
         this.storeReviewResult(pushEvent, dtNow, evaluationReport);
 
-        this.addPushNote(pushEvent, gitlabUrl, gitlabToken, evaluationReport.getMarkdownContent());
+        this.addPushNote(pushEvent, reviewConfig, evaluationReport.getMarkdownContent());
 
-        this.sendDingDingMessage(pushEvent, compareResults, evaluationReport.getMarkdownContent());
+        this.sendDingDingMessage(pushEvent, reviewConfig, evaluationReport.getMarkdownContent());
     }
 
     private void storeReviewResult(PushEvent pushEvent, Date dtNow, EvaluationReport evaluationReport) {
@@ -99,14 +105,20 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
         }
     }
 
-    private void sendDingDingMessage(PushEvent pushEvent, CompareResults compareResults, String markdownContent) {
-        StringBuilder sb = getStringBuilder(pushEvent, compareResults, markdownContent);
+    private void sendDingDingMessage(PushEvent pushEvent, ReviewConfigInfo reviewConfig, String markdownContent) {
+        String title = getTitle(pushEvent);
+        String content = getContent(pushEvent, markdownContent);
 
-        String title = pushEvent.getProject().getName() + " Push Event";
-        dingDingService.sendMessageWebhook(title, sb.toString());
+        dingDingService.sendMessageWebhook(title, content, reviewConfig);
     }
 
-    private StringBuilder getStringBuilder(PushEvent pushEvent, CompareResults compareResults, String markdownContent) {
+    @NotNull
+    private static String getTitle(PushEvent pushEvent) {
+        return pushEvent.getProject().getName() + " Push Event";
+    }
+
+    @NotNull
+    private static String getContent(PushEvent pushEvent, String markdownContent) {
         StringBuilder sb = new StringBuilder();
         sb.append("### 🚀 ").append(pushEvent.getProject().getName())
                 .append(": Push\n\n").append("#### 提交记录:\n");
@@ -123,16 +135,23 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
         }
 
         sb.append(markdownContent);
-        return sb;
+        return sb.toString();
     }
 
-    public void addPushNote(PushEvent pushEvent, String gitlabUrl, String gitlabToken, String content) {
+    /**
+     * Add push note.
+     *
+     * @param pushEvent    the push event
+     * @param reviewConfig the review config
+     * @param content      the content
+     */
+    public void addPushNote(PushEvent pushEvent, ReviewConfigInfo reviewConfig, String content) {
         List<EventCommit> commits = pushEvent.getCommits();
         if (CollectionUtils.isEmpty(commits)) {
             log.info("Push Event has no commits");
             return;
         }
-        try (GitLabApi gitLabApi = new GitLabApi(gitlabUrl, gitlabToken)) {
+        try (GitLabApi gitLabApi = new GitLabApi(reviewConfig.getGitlabUrl(), reviewConfig.getGitlabToken())) {
             EventCommit lastCommit = commits.get(commits.size() - 1);
             EventProject project = pushEvent.getProject();
 
@@ -147,15 +166,14 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
     /**
      * Gets compare results.
      *
-     * @param pushEvent   the push event
-     * @param gitlabUrl   the gitlab url
-     * @param gitlabToken the gitlab token
+     * @param pushEvent    the push event
+     * @param reviewConfig the review config
      * @return the compare results
      */
-    public CompareResults getCompareResults(PushEvent pushEvent, String gitlabUrl, String gitlabToken) {
+    public CompareResults getCompareResults(PushEvent pushEvent, ReviewConfigInfo reviewConfig) {
         CompareResults compare;
         // Create a GitLabApi instance to communicate with GitLab server
-        try (GitLabApi gitLabApi = new GitLabApi(gitlabUrl, gitlabToken)) {
+        try (GitLabApi gitLabApi = new GitLabApi(reviewConfig.getGitlabUrl(), reviewConfig.getGitlabToken())) {
             String before = pushEvent.getBefore();
             String after = pushEvent.getAfter();
             EventProject project = pushEvent.getProject();

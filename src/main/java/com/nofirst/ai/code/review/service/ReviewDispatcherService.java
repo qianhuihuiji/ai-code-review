@@ -1,13 +1,12 @@
 package com.nofirst.ai.code.review.service;
 
+import com.nofirst.ai.code.review.disruptor.MessageModel;
 import com.nofirst.ai.code.review.service.reviewer.PushEventReviewService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gitlab4j.api.webhook.Event;
 import org.gitlab4j.api.webhook.PushEvent;
 import org.springframework.stereotype.Service;
-
-import java.util.Date;
 
 /**
  * dispatch webhook event to different ReviewService
@@ -22,15 +21,13 @@ public class ReviewDispatcherService {
     /**
      * Review.
      *
-     * @param event       the event
-     * @param gitlabUrl   the gitlab url
-     * @param gitlabToken the gitlab token
+     * @param messageModel the message model
      */
-    public void review(Event event, String gitlabUrl, String gitlabToken) {
-        Date date = new Date();
+    public void review(MessageModel messageModel) {
+        Event event = messageModel.getEvent();
         if (event instanceof PushEvent) {
             PushEvent pushEvent = (PushEvent) event;
-            pushEventReviewService.review(pushEvent, gitlabUrl, gitlabToken, date);
+            pushEventReviewService.review(pushEvent, messageModel.getReviewConfigInfo());
         }
     }
 

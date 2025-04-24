@@ -1,5 +1,6 @@
 package com.nofirst.ai.code.review.disruptor;
 
+import com.nofirst.ai.code.review.repository.entity.ReviewConfigInfo;
 import lombok.Data;
 import org.gitlab4j.api.webhook.Event;
 
@@ -8,7 +9,5 @@ public class MessageModel {
 
     private Event event;
 
-    private String gitlabUrl;
-
-    private String gitlabToken;
+    private ReviewConfigInfo reviewConfigInfo;
 }

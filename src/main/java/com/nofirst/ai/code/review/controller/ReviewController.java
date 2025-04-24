@@ -4,16 +4,17 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.nofirst.ai.code.review.config.GitlabConfiguration;
 import com.nofirst.ai.code.review.mapstruct.PushEventMapper;
 import com.nofirst.ai.code.review.model.gitlab.MyPushEvent;
+import com.nofirst.ai.code.review.repository.entity.ReviewConfigInfo;
 import com.nofirst.ai.code.review.service.DisruptorService;
+import com.nofirst.ai.code.review.service.ReviewConfigService;
 import com.taobao.api.ApiException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.webhook.Event;
-import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -24,17 +25,21 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 public class ReviewController {
 
+    private final ReviewConfigService reviewConfigService;
     private final DisruptorService disruptorService;
-    private final GitlabConfiguration gitlabConfiguration;
     private final PushEventMapper pushEventMapper;
 
 
-    @PostMapping(value = "/review/webhook")
-    public void review(@RequestHeader(value = "X-Gitlab-Instance", required = false) String gitlabUrl,
+    @PostMapping(value = "/review/webhook/{id}")
+    public void review(@RequestHeader(value = "X-Gitlab-Event") String gitlabEvent,
+                       @RequestHeader(value = "X-Gitlab-Instance", required = false) String gitlabUrl,
                        @RequestHeader(value = "X-Gitlab-Token", required = false) String gitlabToken,
-                       @RequestHeader(value = "X-Gitlab-Event", required = false) String gitlabEvent,
+                       @PathVariable Long id,
                        @RequestBody String jsonStr) throws ApiException, GitLabApiException {
-        log.info("review event:{}", jsonStr);
+
+        ReviewConfigInfo reviewConfigInfo = reviewConfigService.fetchValidReviewConfigInfo(id, gitlabUrl, gitlabToken);
+
+        log.info("received review event:{}", jsonStr);
 
         Event event = null;
         if ("Push Hook".equals(gitlabEvent)) {
@@ -49,20 +54,6 @@ public class ReviewController {
             }
         }
 
-        if (!StringUtils.hasText(gitlabUrl)) {
-            if (StringUtils.hasText(gitlabConfiguration.getUrl())) {
-                gitlabUrl = gitlabConfiguration.getUrl();
-            } else {
-                throw new RuntimeException("gitlab url missed");
-            }
-        }
-        if (!StringUtils.hasText(gitlabToken)) {
-            if (StringUtils.hasText(gitlabConfiguration.getToken())) {
-                gitlabToken = gitlabConfiguration.getToken();
-            } else {
-                throw new RuntimeException("gitlab token missed");
-            }
-        }
-        disruptorService.sendMsg(event, gitlabUrl, gitlabToken);
+        disruptorService.sendMsg(event, reviewConfigInfo);
     }
 }

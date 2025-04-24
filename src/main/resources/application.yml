@@ -10,8 +10,6 @@ deepseek:
   call-timeout: 60
 server:
   port: 5001
-dingtalk:
-  webhook:
 spring:
   datasource:
     url: jdbc:postgresql://127.0.0.1:5432/xx?currentSchema=public&allowMultiQueries=true

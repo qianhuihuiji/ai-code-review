@@ -19,7 +19,7 @@ public class MsgEventHandler implements EventHandler<MessageModel> {
         try {
             if (messageModel != null) {
                 log.info("消费者收到消息，序列号:{},消息内容:{}", sequence, messageModel.getEvent());
-                reviewDispatcherService.review(messageModel.getEvent(), messageModel.getGitlabUrl(), messageModel.getGitlabToken());
+                reviewDispatcherService.review(messageModel);
             }
         } catch (Exception e) {
             log.error("消费者处理异常:{}", e.getMessage());

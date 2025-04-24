@@ -2,12 +2,16 @@ package com.nofirst.ai.code.review.service;
 
 import com.lmax.disruptor.RingBuffer;
 import com.nofirst.ai.code.review.disruptor.MessageModel;
+import com.nofirst.ai.code.review.repository.entity.ReviewConfigInfo;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gitlab4j.api.webhook.Event;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
+/**
+ * The type Disruptor service.
+ */
 @Slf4j
 @Component
 @Service
@@ -19,11 +23,10 @@ public class DisruptorService {
     /**
      * Send msg.
      *
-     * @param event       the event
-     * @param gitlabUrl   the gitlab url
-     * @param gitlabToken the gitlab token
+     * @param event            the event
+     * @param reviewConfigInfo the review config info
      */
-    public void sendMsg(Event event, String gitlabUrl, String gitlabToken) {
+    public void sendMsg(Event event, ReviewConfigInfo reviewConfigInfo) {
         log.info("投递消息，消息内容: {}", event);
         //获取下一个Event槽的下标
         long sequence = messageModelRingBuffer.next();
@@ -32,8 +35,7 @@ public class DisruptorService {
             //给Event填充数据
             MessageModel messageModel = messageModelRingBuffer.get(sequence);
             messageModel.setEvent(event);
-            messageModel.setGitlabUrl(gitlabUrl);
-            messageModel.setGitlabToken(gitlabToken);
+            messageModel.setReviewConfigInfo(reviewConfigInfo);
             log.info("往消息队列中添加事件：{}", messageModel);
         } catch (Exception e) {
             log.error("消息发送失败，失败原因 {}", e.getMessage(), e);
