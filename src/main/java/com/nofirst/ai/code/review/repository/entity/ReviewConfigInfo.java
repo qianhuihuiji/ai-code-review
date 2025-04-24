@@ -18,10 +18,16 @@ public class ReviewConfigInfo {
     private Long id;
 
     /**
+     * 项目名称
+     */
+    @TableField("project_name")
+    private String projectName;
+
+    /**
      * 项目描述
      */
-    @TableField("description")
-    private String description;
+    @TableField("project_description")
+    private String projectDescription;
 
 
     /**

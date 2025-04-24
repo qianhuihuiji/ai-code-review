@@ -60,14 +60,14 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
 
         EvaluationReport evaluationReport = EvaluationReportConvertUtil.convertFromChatContent(chatResponse.content());
 
-        this.storeReviewResult(pushEvent, dtNow, evaluationReport);
+        this.storeReviewResult(pushEvent, reviewConfig, dtNow, evaluationReport);
 
         this.addPushNote(pushEvent, reviewConfig, evaluationReport.getMarkdownContent());
 
         this.sendDingDingMessage(pushEvent, reviewConfig, evaluationReport.getMarkdownContent());
     }
 
-    private void storeReviewResult(PushEvent pushEvent, Date dtNow, EvaluationReport evaluationReport) {
+    private void storeReviewResult(PushEvent pushEvent, ReviewConfigInfo reviewConfig, Date dtNow, EvaluationReport evaluationReport) {
         ReviewResultInfo reviewResultInfo = new ReviewResultInfo();
         reviewResultInfo.setObjectKind(pushEvent.getObjectKind());
         reviewResultInfo.setUserId(pushEvent.getUserId());
@@ -76,6 +76,8 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
         reviewResultInfo.setReviewResult(evaluationReport.getMarkdownContent());
         reviewResultInfo.setReviewScore(evaluationReport.getTotalScore());
         reviewResultInfo.setCreateTime(dtNow);
+        reviewResultInfo.setConfigId(reviewConfig.getId());
+        reviewResultInfo.setProjectName(reviewConfig.getProjectName());
         reviewResultInfoDAO.save(reviewResultInfo);
 
         for (Result result : evaluationReport.getResults()) {

@@ -60,4 +60,15 @@ public class ReviewResultInfo {
     @TableField("create_time")
     private Date createTime;
 
+    /**
+     * 关联配置表id
+     */
+    @TableField("config_id")
+    private Long configId;
+
+    /**
+     * 关联工程名称
+     */
+    @TableField("project_name")
+    private String projectName;
 }
