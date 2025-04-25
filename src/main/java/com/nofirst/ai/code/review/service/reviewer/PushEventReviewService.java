@@ -22,6 +22,7 @@ import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Comment;
 import org.gitlab4j.api.models.CompareResults;
+import org.gitlab4j.api.models.RepositoryFile;
 import org.gitlab4j.api.webhook.EventCommit;
 import org.gitlab4j.api.webhook.EventProject;
 import org.gitlab4j.api.webhook.PushEvent;
@@ -67,6 +68,17 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
         this.sendDingDingMessage(pushEvent, reviewConfig, evaluationReport.getMarkdownContent());
     }
 
+    public void reviewFile(ReviewConfigInfo reviewConfig) {
+        // Create a GitLabApi instance to communicate with GitLab server
+        try (GitLabApi gitLabApi = new GitLabApi(reviewConfig.getGitlabUrl(), reviewConfig.getGitlabToken())) {
+            RepositoryFile file = gitLabApi.getRepositoryFileApi().getFile(1, "NewPushEventService.java", "refs/heads/main");
+            log.info("Compare results: {}", 1);
+        } catch (GitLabApiException e) {
+            log.error("GitLab Repository API exception", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     private void storeReviewResult(PushEvent pushEvent, ReviewConfigInfo reviewConfig, Date dtNow, EvaluationReport evaluationReport) {
         ReviewResultInfo reviewResultInfo = new ReviewResultInfo();
         reviewResultInfo.setObjectKind(pushEvent.getObjectKind());
@@ -85,6 +97,7 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
             reviewResultInfoDetail.setResultId(reviewResultInfo.getId());
             reviewResultInfoDetail.setType(result.getType());
             reviewResultInfoDetail.setReviewScore(result.getScore());
+            reviewResultInfoDetail.setFullScore(result.getFullScore());
             reviewResultInfoDetail.setCreateTime(dtNow);
 
             reviewResultInfoDetailDAO.save(reviewResultInfoDetail);

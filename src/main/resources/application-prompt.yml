@@ -16,6 +16,7 @@ prompt:
             {
                 "type": "功能实现的正确性与健壮性",
                 "score": 20,
+                "fullScore": 40,
                 "questions": [
                     {
                         "title": "ReviewController.java",
@@ -32,9 +33,10 @@ prompt:
     }
     以上JSON结构说明如下：
     1. results：表示审查结果，是一个列表，对应“代码审查目标”里面的5项。
-    2. results包含的对象属性说明：type表示“代码审查目标”的分类项目，score表示该项目得分，questions表示发现的问题列表（如果没有则返回空列表），advices表示建议列表（如果没有则表示空列表）。
+    2. results包含的对象属性说明：type表示“代码审查目标”的分类项目；score表示该项目得分；fullScore表示该项总分，如"功能实现的正确性与健壮性（40分）"那么该项fullScore就是40；
+       questions表示发现的问题列表（如果没有则返回空列表）；advices表示建议列表（如果没有则表示空列表）。
     3. questions包含的对象属性说明：title表示问题标题，可以是具体的类文件名；content表示具体内容。
-    3. totalScore：表示审查的总分，是“代码审查目标”里面的5项得分之和。
+    4. totalScore：表示审查的总分，是“代码审查目标”里面的5项得分之和。
     
     特别说明：
     整个评论要保持专业风格，使用标准的工程术语，保持专业严谨。

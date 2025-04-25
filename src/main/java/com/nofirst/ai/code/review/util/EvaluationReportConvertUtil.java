@@ -22,7 +22,7 @@ public class EvaluationReportConvertUtil {
      */
     public static String convertToMarkdown(EvaluationReport report) {
         StringBuilder md = new StringBuilder();
-        md.append("# Auto Code Review Result\n\n**总分**: ").append(report.getTotalScore()).append("\n\n---\n\n");
+        md.append("# Auto Code Review Result\n\n**总分**: ").append(report.getTotalScore()).append(" 满分：100\n\n---\n\n");
 
         int sectionIndex = 1; // 评分项序号从1开始
         for (Result result : report.getResults()) {
@@ -33,6 +33,8 @@ public class EvaluationReportConvertUtil {
                     .append(result.getType())
                     .append("\n\n**得分**: ")
                     .append(result.getScore())
+                    .append(" **该项满分**: ")
+                    .append(result.getFullScore())
                     .append("\n\n");
 
             // 问题列表处理
@@ -41,7 +43,7 @@ public class EvaluationReportConvertUtil {
                 md.append("暂无\n");
             } else {
                 for (Question question : result.getQuestions()) {
-                    md.append("- ​**")
+                    md.append("- **")
                             .append(question.getTitle())
                             .append("**  \n  ")  // 两个空格实现Markdown换行
                             .append(question.getContent())

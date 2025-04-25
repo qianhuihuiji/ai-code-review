@@ -50,6 +50,12 @@ public class ReviewResultInfoDetail extends Model<ReviewResultInfoDetail> {
     private Integer reviewScore;
 
     /**
+     * 该项满分
+     */
+    @TableField("full_score")
+    private Integer fullScore;
+
+    /**
      * 创建时间
      */
     @TableField("create_time")

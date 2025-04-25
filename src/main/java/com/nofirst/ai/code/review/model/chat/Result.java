@@ -11,6 +11,8 @@ public class Result {
 
     private int score;
 
+    private int fullScore;
+
     private List<Question> questions;
 
     private List<String> advices;
