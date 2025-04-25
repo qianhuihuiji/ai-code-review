@@ -6,6 +6,9 @@ import com.nofirst.ai.code.review.model.chat.EvaluationReport;
 import com.nofirst.ai.code.review.model.chat.Question;
 import com.nofirst.ai.code.review.model.chat.Result;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * The type Evaluation report convert util.
  */
@@ -88,20 +91,22 @@ public class EvaluationReportConvertUtil {
 
     /**
      * chat返回的格式为 :```json ..... ```
-     * 此方法去除头尾格式字符，提取出文本
+     * 此方法提取出json文本
      *
      * @param chatContent the review result
      * @return the string
      */
     private static String pureJson(String chatContent) {
-        String startMarker = "```json";
-        String endMarker = "```";
+        // 定义正则表达式，匹配 ```json 包裹的JSON内容（支持多行）
+        String regex = "```json\\s*(.*?)\\s*```";
+        // DOTALL模式匹配换行符
+        Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(chatContent);
 
-        if (chatContent.startsWith(startMarker) && chatContent.endsWith(endMarker)) {
-            int start = startMarker.length();
-            int end = chatContent.length() - endMarker.length();
-            return chatContent.substring(start, end).trim();
+        if (matcher.find()) {
+            // 提取第一个捕获组并去除首尾空白
+            return matcher.group(1).trim();
         }
-        return chatContent;
+        return null;
     }
 }

@@ -2,7 +2,6 @@ package com.nofirst.ai.code.review.service;
 
 import com.nofirst.ai.code.review.config.PromptTemplatesConfiguration;
 import io.github.pigmesh.ai.deepseek.core.DeepSeekClient;
-import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionModel;
 import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionRequest;
 import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionResponse;
 import lombok.AllArgsConstructor;
@@ -36,7 +35,6 @@ public class DeepseekService {
         String real = replaced.replace("{commits_text}", commitsText);
 
         ChatCompletionRequest request = ChatCompletionRequest.builder()
-                .model(ChatCompletionModel.DEEPSEEK_REASONER)
                 .addSystemMessage(systemPrompt)
                 .addUserMessage(real)
                 .build();
