@@ -5,9 +5,9 @@ deepseek:
   log-requests: true
   log-responses: true
   log-level: DEBUG
-  connect-timeout: 60
-  read-timeout: 60
-  call-timeout: 60
+  connect-timeout: 600
+  read-timeout: 600
+  call-timeout: 600
 server:
   port: 5001
 spring:
