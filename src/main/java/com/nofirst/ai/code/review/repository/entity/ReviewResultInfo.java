@@ -55,6 +55,12 @@ public class ReviewResultInfo {
     private Integer reviewScore;
 
     /**
+     * Review 状态，0未开始，1成功，2失败
+     */
+    @TableField("review_status")
+    private Integer reviewStatus;
+
+    /**
      * 创建时间
      */
     @TableField("create_time")
@@ -71,4 +77,10 @@ public class ReviewResultInfo {
      */
     @TableField("project_name")
     private String projectName;
+
+    /**
+     * 失败时的错误内容
+     */
+    @TableField("failure_msg")
+    private String failureMsg;
 }

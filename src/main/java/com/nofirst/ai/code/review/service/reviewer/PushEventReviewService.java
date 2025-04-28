@@ -3,6 +3,7 @@ package com.nofirst.ai.code.review.service.reviewer;
 import com.nofirst.ai.code.review.model.chat.EvaluationReport;
 import com.nofirst.ai.code.review.model.chat.Question;
 import com.nofirst.ai.code.review.model.chat.Result;
+import com.nofirst.ai.code.review.model.chat.ReviewStatusEnum;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDAO;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDetailAdviceDAO;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDetailDAO;
@@ -22,7 +23,7 @@ import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Comment;
 import org.gitlab4j.api.models.CompareResults;
-import org.gitlab4j.api.models.RepositoryFile;
+import org.gitlab4j.api.models.TreeItem;
 import org.gitlab4j.api.webhook.EventCommit;
 import org.gitlab4j.api.webhook.EventProject;
 import org.gitlab4j.api.webhook.PushEvent;
@@ -51,9 +52,9 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
 
 
     @Override
-    public void review(PushEvent pushEvent, ReviewConfigInfo reviewConfig) {
-        Date dtNow = new Date();
-        log.info("Push Hook event begin review: {}", dtNow);
+    public void review(PushEvent pushEvent, ReviewConfigInfo reviewConfig, ReviewResultInfo reviewResultInfo) {
+        log.info("Push Hook event begin review...");
+        this.updateReviewResult(pushEvent, reviewResultInfo);
 
         CompareResults compareResults = this.getCompareResults(pushEvent, reviewConfig);
 
@@ -61,7 +62,7 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
 
         EvaluationReport evaluationReport = EvaluationReportConvertUtil.convertFromChatContent(chatResponse.content());
 
-        this.storeReviewResult(pushEvent, reviewConfig, dtNow, evaluationReport);
+        this.storeReviewResult(reviewResultInfo, evaluationReport);
 
         this.addPushNote(pushEvent, reviewConfig, evaluationReport.getMarkdownContent());
 
@@ -71,7 +72,8 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
     public void reviewFile(ReviewConfigInfo reviewConfig) {
         // Create a GitLabApi instance to communicate with GitLab server
         try (GitLabApi gitLabApi = new GitLabApi(reviewConfig.getGitlabUrl(), reviewConfig.getGitlabToken())) {
-            RepositoryFile file = gitLabApi.getRepositoryFileApi().getFile(1, "NewPushEventService.java", "refs/heads/main");
+            List<TreeItem> tree = gitLabApi.getRepositoryApi().getTree(296L, "/", "refs/heads/dev", true);
+//            RepositoryFile file = gitLabApi.getRepositoryFileApi().getFile(1, "NewPushEventService.java", "refs/heads/main");
             log.info("Compare results: {}", 1);
         } catch (GitLabApiException e) {
             log.error("GitLab Repository API exception", e);
@@ -79,18 +81,22 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
         }
     }
 
-    private void storeReviewResult(PushEvent pushEvent, ReviewConfigInfo reviewConfig, Date dtNow, EvaluationReport evaluationReport) {
-        ReviewResultInfo reviewResultInfo = new ReviewResultInfo();
+    private void updateReviewResult(PushEvent pushEvent, ReviewResultInfo reviewResultInfo) {
         reviewResultInfo.setObjectKind(pushEvent.getObjectKind());
         reviewResultInfo.setUserId(pushEvent.getUserId());
         reviewResultInfo.setUsername(pushEvent.getUserUsername());
         reviewResultInfo.setOriginInfo(pushEvent.toString());
+
+        reviewResultInfoDAO.updateById(reviewResultInfo);
+    }
+
+    private void storeReviewResult(ReviewResultInfo reviewResultInfo, EvaluationReport evaluationReport) {
+        Date dtNow = reviewResultInfo.getCreateTime();
         reviewResultInfo.setReviewResult(evaluationReport.getMarkdownContent());
         reviewResultInfo.setReviewScore(evaluationReport.getTotalScore());
-        reviewResultInfo.setCreateTime(dtNow);
-        reviewResultInfo.setConfigId(reviewConfig.getId());
-        reviewResultInfo.setProjectName(reviewConfig.getProjectName());
-        reviewResultInfoDAO.save(reviewResultInfo);
+        reviewResultInfo.setReviewStatus(ReviewStatusEnum.SUCCESS.getStatus());
+
+        reviewResultInfoDAO.updateById(reviewResultInfo);
 
         for (Result result : evaluationReport.getResults()) {
             ReviewResultInfoDetail reviewResultInfoDetail = new ReviewResultInfoDetail();

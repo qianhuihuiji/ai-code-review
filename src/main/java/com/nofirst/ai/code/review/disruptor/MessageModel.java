@@ -1,6 +1,7 @@
 package com.nofirst.ai.code.review.disruptor;
 
 import com.nofirst.ai.code.review.repository.entity.ReviewConfigInfo;
+import com.nofirst.ai.code.review.repository.entity.ReviewResultInfo;
 import lombok.Data;
 import org.gitlab4j.api.webhook.Event;
 
@@ -10,4 +11,6 @@ public class MessageModel {
     private Event event;
 
     private ReviewConfigInfo reviewConfigInfo;
+
+    private ReviewResultInfo reviewResultInfo;
 }

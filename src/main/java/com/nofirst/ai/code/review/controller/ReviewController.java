@@ -5,8 +5,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.nofirst.ai.code.review.mapstruct.PushEventMapper;
+import com.nofirst.ai.code.review.model.chat.ReviewStatusEnum;
 import com.nofirst.ai.code.review.model.gitlab.MyPushEvent;
+import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDAO;
 import com.nofirst.ai.code.review.repository.entity.ReviewConfigInfo;
+import com.nofirst.ai.code.review.repository.entity.ReviewResultInfo;
 import com.nofirst.ai.code.review.service.DisruptorService;
 import com.nofirst.ai.code.review.service.ReviewConfigService;
 import com.nofirst.ai.code.review.service.reviewer.PushEventReviewService;
@@ -22,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Date;
+
 @RestController
 @Slf4j
 @AllArgsConstructor
@@ -31,6 +36,8 @@ public class ReviewController {
     private final DisruptorService disruptorService;
     private final PushEventMapper pushEventMapper;
     private final PushEventReviewService pushEventReviewService;
+
+    private final IReviewResultInfoDAO reviewResultInfoDAO;
 
 
     @PostMapping(value = "/review/webhook/{id}")
@@ -45,6 +52,7 @@ public class ReviewController {
         log.info("received review event:{}", jsonStr);
 
         Event event = null;
+        Date dtNow = new Date();
         if ("Push Hook".equals(gitlabEvent)) {
             ObjectMapper mapper = new ObjectMapper();
             mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
@@ -52,17 +60,26 @@ public class ReviewController {
             try {
                 MyPushEvent myPushEvent = mapper.readValue(jsonStr, MyPushEvent.class);
                 event = pushEventMapper.toPushEvent(myPushEvent);
+
+                ReviewResultInfo reviewResultInfo = new ReviewResultInfo();
+                reviewResultInfo.setCreateTime(dtNow);
+                reviewResultInfo.setConfigId(reviewConfigInfo.getId());
+                reviewResultInfo.setProjectName(reviewConfigInfo.getProjectName());
+                reviewResultInfo.setReviewStatus(ReviewStatusEnum.NOT_STARTED.getStatus());
+                reviewResultInfoDAO.save(reviewResultInfo);
+
+                disruptorService.sendMsg(event, reviewConfigInfo, reviewResultInfo);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
         }
 
-        disruptorService.sendMsg(event, reviewConfigInfo);
+
     }
 
     @GetMapping(value = "/review/file")
     public void reviewFile() throws ApiException, GitLabApiException {
-        ReviewConfigInfo reviewConfigInfo = reviewConfigService.fetchValidReviewConfigInfo(3L, null, null);
+        ReviewConfigInfo reviewConfigInfo = reviewConfigService.fetchValidReviewConfigInfo(1L, null, null);
         pushEventReviewService.reviewFile(reviewConfigInfo);
     }
 }
