@@ -39,9 +39,9 @@ public class ReviewResultInfoDetail extends Model<ReviewResultInfoDetail> {
     private Long resultId;
 
     /**
-     * review类型
+     * review维度
      */
-    private String type;
+    private String dimension;
 
     /**
      * review评分

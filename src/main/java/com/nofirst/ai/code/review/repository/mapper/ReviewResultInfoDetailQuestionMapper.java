@@ -1,7 +1,7 @@
 package com.nofirst.ai.code.review.repository.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetailQuestion;
+import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetailIssue;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -12,6 +12,6 @@ import org.apache.ibatis.annotations.Mapper;
  * @author nofirst
  */
 @Mapper
-public interface ReviewResultInfoDetailQuestionMapper extends BaseMapper<ReviewResultInfoDetailQuestion> {
+public interface ReviewResultInfoDetailQuestionMapper extends BaseMapper<ReviewResultInfoDetailIssue> {
 
 }

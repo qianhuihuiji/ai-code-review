@@ -1,18 +1,16 @@
 package com.nofirst.ai.code.review.service.reviewer;
 
 import com.nofirst.ai.code.review.model.chat.EvaluationReport;
-import com.nofirst.ai.code.review.model.chat.Question;
+import com.nofirst.ai.code.review.model.chat.Issue;
 import com.nofirst.ai.code.review.model.chat.Result;
 import com.nofirst.ai.code.review.model.chat.ReviewStatusEnum;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDAO;
-import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDetailAdviceDAO;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDetailDAO;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDetailQuestionDAO;
 import com.nofirst.ai.code.review.repository.entity.ReviewConfigInfo;
 import com.nofirst.ai.code.review.repository.entity.ReviewResultInfo;
 import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetail;
-import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetailAdvice;
-import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetailQuestion;
+import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetailIssue;
 import com.nofirst.ai.code.review.service.DeepseekService;
 import com.nofirst.ai.code.review.service.DingDingService;
 import com.nofirst.ai.code.review.util.EvaluationReportConvertUtil;
@@ -23,7 +21,7 @@ import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Comment;
 import org.gitlab4j.api.models.CompareResults;
-import org.gitlab4j.api.models.TreeItem;
+import org.gitlab4j.api.models.RepositoryFile;
 import org.gitlab4j.api.webhook.EventCommit;
 import org.gitlab4j.api.webhook.EventProject;
 import org.gitlab4j.api.webhook.PushEvent;
@@ -48,7 +46,6 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
     private final IReviewResultInfoDAO reviewResultInfoDAO;
     private final IReviewResultInfoDetailDAO reviewResultInfoDetailDAO;
     private final IReviewResultInfoDetailQuestionDAO detailQuestionDAO;
-    private final IReviewResultInfoDetailAdviceDAO adviceDAO;
 
 
     @Override
@@ -72,8 +69,15 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
     public void reviewFile(ReviewConfigInfo reviewConfig) {
         // Create a GitLabApi instance to communicate with GitLab server
         try (GitLabApi gitLabApi = new GitLabApi(reviewConfig.getGitlabUrl(), reviewConfig.getGitlabToken())) {
-            List<TreeItem> tree = gitLabApi.getRepositoryApi().getTree(296L, "/", "refs/heads/dev", true);
-//            RepositoryFile file = gitLabApi.getRepositoryFileApi().getFile(1, "NewPushEventService.java", "refs/heads/main");
+//            List<TreeItem> tree = gitLabApi.getRepositoryApi().getTree(296L, "op-starter/src/main/java/com/hnup/osmp/op/starter/service/operator/OpHistoryService.java", "refs/heads/dev", true);
+            RepositoryFile file = gitLabApi.getRepositoryFileApi().getFile(296L, "op-starter/src/main/java/com/hnup/osmp/op/starter/service/operator/OpPhaseTimeService.java", "refs/heads/dev", true);
+
+            ChatCompletionResponse chatResponse = deepseekService.chat(file);
+
+            EvaluationReport evaluationReport = EvaluationReportConvertUtil.convertFromChatContent(chatResponse.content());
+
+
+            dingDingService.sendMessageWebhook("OpPhaseTimeService.java review result", evaluationReport.getMarkdownContent(), reviewConfig);
             log.info("Compare results: {}", 1);
         } catch (GitLabApiException e) {
             log.error("GitLab Repository API exception", e);
@@ -101,27 +105,23 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
         for (Result result : evaluationReport.getResults()) {
             ReviewResultInfoDetail reviewResultInfoDetail = new ReviewResultInfoDetail();
             reviewResultInfoDetail.setResultId(reviewResultInfo.getId());
-            reviewResultInfoDetail.setType(result.getType());
+            reviewResultInfoDetail.setDimension(result.getDimension());
             reviewResultInfoDetail.setReviewScore(result.getScore());
             reviewResultInfoDetail.setFullScore(result.getFullScore());
             reviewResultInfoDetail.setCreateTime(dtNow);
 
             reviewResultInfoDetailDAO.save(reviewResultInfoDetail);
 
-            for (Question question : result.getQuestions()) {
-                ReviewResultInfoDetailQuestion detailQuestion = new ReviewResultInfoDetailQuestion();
+            for (Issue issue : result.getIssues()) {
+                ReviewResultInfoDetailIssue detailQuestion = new ReviewResultInfoDetailIssue();
                 detailQuestion.setDetailId(reviewResultInfoDetail.getId());
-                detailQuestion.setTitle(question.getTitle());
-                detailQuestion.setContent(question.getContent());
+                detailQuestion.setFile(issue.getFile());
+                detailQuestion.setTitle(issue.getTitle());
+                detailQuestion.setDetail(issue.getDetail());
+                detailQuestion.setSeverity(issue.getSeverity());
+                detailQuestion.setAdvice(issue.getAdvice());
                 detailQuestion.setCreateTime(dtNow);
                 detailQuestionDAO.save(detailQuestion);
-            }
-            for (String advice : result.getAdvices()) {
-                ReviewResultInfoDetailAdvice detailAdvice = new ReviewResultInfoDetailAdvice();
-                detailAdvice.setDetailId(reviewResultInfoDetail.getId());
-                detailAdvice.setContent(advice);
-                detailAdvice.setCreateTime(dtNow);
-                adviceDAO.save(detailAdvice);
             }
         }
     }

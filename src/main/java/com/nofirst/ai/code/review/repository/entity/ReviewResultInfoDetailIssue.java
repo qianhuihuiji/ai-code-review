@@ -22,8 +22,8 @@ import java.util.Date;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("review_result_info_detail_advice")
-public class ReviewResultInfoDetailAdvice extends Model<ReviewResultInfoDetailAdvice> {
+@TableName("review_result_info_detail_issue")
+public class ReviewResultInfoDetailIssue extends Model<ReviewResultInfoDetailIssue> {
 
     /**
      * 主键
@@ -38,9 +38,29 @@ public class ReviewResultInfoDetailAdvice extends Model<ReviewResultInfoDetailAd
     private Long detailId;
 
     /**
-     * 建议内容
+     * 文件位置
      */
-    private String content;
+    private String file;
+
+    /**
+     * 问题标题
+     */
+    private String title;
+
+    /**
+     * 问题内容
+     */
+    private String detail;
+
+    /**
+     * 严重性
+     */
+    private String severity;
+
+    /**
+     * 修复建议
+     */
+    private String advice;
 
     /**
      * 创建时间

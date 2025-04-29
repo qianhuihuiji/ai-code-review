@@ -7,13 +7,12 @@ import java.util.List;
 @Data
 public class Result {
 
-    private String type;
+    private String dimension;
 
     private int score;
 
     private int fullScore;
 
-    private List<Question> questions;
+    private List<Issue> issues;
 
-    private List<String> advices;
 }

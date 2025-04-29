@@ -1,7 +1,7 @@
 package com.nofirst.ai.code.review.repository.dao;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetailQuestion;
+import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetailIssue;
 
 /**
  * <p>
@@ -10,6 +10,6 @@ import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetailQuesti
  *
  * @author nofirst
  */
-public interface IReviewResultInfoDetailQuestionDAO extends IService<ReviewResultInfoDetailQuestion> {
+public interface IReviewResultInfoDetailQuestionDAO extends IService<ReviewResultInfoDetailIssue> {
 
 }

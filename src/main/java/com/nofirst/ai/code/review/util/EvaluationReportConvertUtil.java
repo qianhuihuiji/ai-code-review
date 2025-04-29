@@ -3,9 +3,11 @@ package com.nofirst.ai.code.review.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nofirst.ai.code.review.model.chat.EvaluationReport;
-import com.nofirst.ai.code.review.model.chat.Question;
+import com.nofirst.ai.code.review.model.chat.Issue;
 import com.nofirst.ai.code.review.model.chat.Result;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,51 +24,52 @@ public class EvaluationReportConvertUtil {
      */
     public static String convertToMarkdown(EvaluationReport report) {
         StringBuilder md = new StringBuilder();
-        md.append("# Auto Code Review Result\n\n**总分**: ").append(report.getTotalScore()).append(" **满分**: 100\n\n---\n\n");
+        md.append("# Auto Code Review Result\n\n**总分**: ").append(report.getTotalScore())
+                .append(" **满分**: 100 \n")
+                .append("**生成时间**: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
+                .append("\n\n---\n\n");
 
         int sectionIndex = 1; // 评分项序号从1开始
         for (Result result : report.getResults()) {
             // 带序号的评分项标题
-            md.append("## ")
-                    .append(sectionIndex++)
-                    .append(". ")
-                    .append(result.getType())
-                    .append("\n\n**得分**: ")
-                    .append(result.getScore())
-                    .append(" **满分**: ")
-                    .append(result.getFullScore())
+            md.append("## ").append(sectionIndex++).append(". ").append(result.getDimension())
+                    .append("  \n**得分**: ").append(result.getScore()).append("/").append(result.getFullScore())
                     .append("\n\n");
 
             // 问题列表处理
-            md.append("### 问题列表\n");
-            if (result.getQuestions().isEmpty()) {
-                md.append("暂无\n");
+            if (result.getIssues().isEmpty()) {
+                md.append("### ✅ 未发现问题\n");
             } else {
-                for (Question question : result.getQuestions()) {
-                    md.append("- **")
-                            .append(question.getTitle())
-                            .append("**  \n  ")  // 两个空格实现Markdown换行
-                            .append(question.getContent())
-                            .append("\n");
+                md.append("### ❗ 问题列表 (").append(result.getIssues().size()).append("项)\n");
+                for (Issue issue : result.getIssues()) {
+                    // 根据严重等级应用样式
+                    String severityStyle = getSeverityStyle(issue.getSeverity());
+
+                    md.append("- **").append(severityStyle).append(issue.getTitle()).append("**") // 标题带样式
+                            .append("  \n  ▸ **文件**: `").append(issue.getFile()).append("`")  // 代码块显示路径
+                            .append("  \n  ▸ **严重性**: ").append(severityStyle).append("  ") // 等级样式
+                            .append("  \n  ▸ **详情**: ").append(issue.getDetail())
+                            .append("  \n  ▸ **建议**: ").append(issue.getAdvice().replace(";", ";\n    ")) // 建议换行处理
+                            .append("\n\n");
                 }
             }
 
-            // 改进建议处理
-            md.append("\n### 改进建议\n");
-            if (result.getAdvices().isEmpty()) {
-                md.append("暂无\n");
-            } else {
-                int adviceIndex = 1;
-                for (String advice : result.getAdvices()) {
-                    md.append(adviceIndex++)
-                            .append(". ")
-                            .append(advice)
-                            .append("\n");
-                }
-            }
             md.append("\n---\n\n");
         }
         return md.toString();
+    }
+
+    private static String getSeverityStyle(String severity) {
+        switch (severity.toUpperCase()) {
+            case "HIGH":
+                return "<span style='color:red; font-weight:600'>严重</span>"; // 红色加粗
+            case "MEDIUM":
+                return "<span style='color:#FFA500; font-weight:500'>普通</span>"; // 橙色
+            case "LOW":
+                return "<span style='color:#6c757d'>一般</span>"; // 灰色
+            default:
+                return "<span style='color:red; font-weight:600'>一般</span>"; // 红色加粗
+        }
     }
 
     /**

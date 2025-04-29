@@ -13,4 +13,6 @@ public class PromptTemplatesConfiguration {
 
     private String user;
 
+    private String file;
+
 }

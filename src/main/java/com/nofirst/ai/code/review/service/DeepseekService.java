@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.buf.StringUtils;
 import org.gitlab4j.api.models.Commit;
 import org.gitlab4j.api.models.CompareResults;
+import org.gitlab4j.api.models.RepositoryFile;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -33,6 +34,25 @@ public class DeepseekService {
         String userPrompt = promptTemplatesConfiguration.getUser();
         String replaced = userPrompt.replace("{diffs_text}", diffsText);
         String real = replaced.replace("{commits_text}", commitsText);
+
+        ChatCompletionRequest request = ChatCompletionRequest.builder()
+                .addSystemMessage(systemPrompt)
+                .addUserMessage(real)
+                .build();
+
+        ChatCompletionResponse chatResponse = deepSeekClient.chatCompletion(request).execute();
+
+        log.info("Chat end,Chat completion response: {}", chatResponse);
+        return chatResponse;
+    }
+
+    public ChatCompletionResponse chat(RepositoryFile repositoryFile) {
+        log.info("Chat begin");
+        
+        String systemPrompt = promptTemplatesConfiguration.getSystem();
+
+        String filePrompt = promptTemplatesConfiguration.getFile();
+        String real = filePrompt.replace("{code_text}", repositoryFile.getContent());
 
         ChatCompletionRequest request = ChatCompletionRequest.builder()
                 .addSystemMessage(systemPrompt)
