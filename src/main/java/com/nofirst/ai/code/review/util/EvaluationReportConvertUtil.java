@@ -25,7 +25,7 @@ public class EvaluationReportConvertUtil {
     public static String convertToMarkdown(EvaluationReport report) {
         StringBuilder md = new StringBuilder();
         md.append("# Auto Code Review Result\n\n**总分**: ").append(report.getTotalScore())
-                .append(" **满分**: 100 \n")
+                .append(" **满分**: 100 \n\n")
                 .append("**生成时间**: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
                 .append("\n\n---\n\n");
 
@@ -62,13 +62,13 @@ public class EvaluationReportConvertUtil {
     private static String getSeverityStyle(String severity) {
         switch (severity.toUpperCase()) {
             case "HIGH":
-                return "<span style='color:red; font-weight:600'>严重</span>"; // 红色加粗
+                return "<span style='color:red; font-weight:600'>"; // 红色加粗
             case "MEDIUM":
-                return "<span style='color:#FFA500; font-weight:500'>普通</span>"; // 橙色
+                return "<span style='color:#FFA500; font-weight:500'>"; // 橙色
             case "LOW":
-                return "<span style='color:#6c757d'>一般</span>"; // 灰色
+                return "<span style='color:#6c757d'>"; // 灰色
             default:
-                return "<span style='color:red; font-weight:600'>一般</span>"; // 红色加粗
+                return "<span style='color:#6c757d'>"; // 灰色
         }
     }
 

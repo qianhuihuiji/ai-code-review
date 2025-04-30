@@ -14,7 +14,6 @@ import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetailIssue;
 import com.nofirst.ai.code.review.service.DeepseekService;
 import com.nofirst.ai.code.review.service.DingDingService;
 import com.nofirst.ai.code.review.util.EvaluationReportConvertUtil;
-import io.github.pigmesh.ai.deepseek.core.chat.ChatCompletionResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gitlab4j.api.GitLabApi;
@@ -55,9 +54,9 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
 
         CompareResults compareResults = this.getCompareResults(pushEvent, reviewConfig);
 
-        ChatCompletionResponse chatResponse = deepseekService.chat(compareResults);
+        String chatResponse = deepseekService.chat(compareResults);
 
-        EvaluationReport evaluationReport = EvaluationReportConvertUtil.convertFromChatContent(chatResponse.content());
+        EvaluationReport evaluationReport = EvaluationReportConvertUtil.convertFromChatContent(chatResponse);
 
         this.storeReviewResult(reviewResultInfo, evaluationReport);
 
@@ -72,13 +71,11 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
 //            List<TreeItem> tree = gitLabApi.getRepositoryApi().getTree(296L, "op-starter/src/main/java/com/hnup/osmp/op/starter/service/operator/OpHistoryService.java", "refs/heads/dev", true);
             RepositoryFile file = gitLabApi.getRepositoryFileApi().getFile(296L, "op-starter/src/main/java/com/hnup/osmp/op/starter/service/operator/OpPhaseTimeService.java", "refs/heads/dev", true);
 
-            ChatCompletionResponse chatResponse = deepseekService.chat(file);
+            String chat = deepseekService.chat(file);
 
-            EvaluationReport evaluationReport = EvaluationReportConvertUtil.convertFromChatContent(chatResponse.content());
-
+            EvaluationReport evaluationReport = EvaluationReportConvertUtil.convertFromChatContent(chat);
 
             dingDingService.sendMessageWebhook("OpPhaseTimeService.java review result", evaluationReport.getMarkdownContent(), reviewConfig);
-            log.info("Compare results: {}", 1);
         } catch (GitLabApiException e) {
             log.error("GitLab Repository API exception", e);
             throw new RuntimeException(e);
