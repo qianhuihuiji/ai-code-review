@@ -20,7 +20,6 @@ import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Comment;
 import org.gitlab4j.api.models.CompareResults;
-import org.gitlab4j.api.models.RepositoryFile;
 import org.gitlab4j.api.webhook.EventCommit;
 import org.gitlab4j.api.webhook.EventProject;
 import org.gitlab4j.api.webhook.PushEvent;
@@ -63,23 +62,6 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
         this.addPushNote(pushEvent, reviewConfig, evaluationReport.getMarkdownContent());
 
         this.sendDingDingMessage(pushEvent, reviewConfig, evaluationReport.getMarkdownContent());
-    }
-
-    public void reviewFile(ReviewConfigInfo reviewConfig) {
-        // Create a GitLabApi instance to communicate with GitLab server
-        try (GitLabApi gitLabApi = new GitLabApi(reviewConfig.getGitlabUrl(), reviewConfig.getGitlabToken())) {
-//            List<TreeItem> tree = gitLabApi.getRepositoryApi().getTree(296L, "op-starter/src/main/java/com/hnup/osmp/op/starter/service/operator/OpHistoryService.java", "refs/heads/dev", true);
-            RepositoryFile file = gitLabApi.getRepositoryFileApi().getFile(296L, "op-starter/src/main/java/com/hnup/osmp/op/starter/service/operator/OpPhaseTimeService.java", "refs/heads/dev", true);
-
-            String chat = deepseekService.chat(file);
-
-            EvaluationReport evaluationReport = EvaluationReportConvertUtil.convertFromChatContent(chat);
-
-            dingDingService.sendMessageWebhook("OpPhaseTimeService.java review result", evaluationReport.getMarkdownContent(), reviewConfig);
-        } catch (GitLabApiException e) {
-            log.error("GitLab Repository API exception", e);
-            throw new RuntimeException(e);
-        }
     }
 
     private void updateReviewResult(PushEvent pushEvent, ReviewEventTask reviewEventTask) {

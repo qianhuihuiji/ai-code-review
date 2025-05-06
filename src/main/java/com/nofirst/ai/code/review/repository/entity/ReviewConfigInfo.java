@@ -24,6 +24,11 @@ public class ReviewConfigInfo {
     private String projectName;
 
     /**
+     * 项目id，对应gitlab的项目id
+     */
+    private Long projectId;
+
+    /**
      * 项目描述
      */
     @TableField("project_description")

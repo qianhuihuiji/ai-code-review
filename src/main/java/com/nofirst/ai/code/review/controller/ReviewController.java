@@ -13,6 +13,7 @@ import com.nofirst.ai.code.review.repository.entity.ReviewEventTask;
 import com.nofirst.ai.code.review.service.DisruptorService;
 import com.nofirst.ai.code.review.service.ReviewConfigService;
 import com.nofirst.ai.code.review.service.reviewer.PushEventReviewService;
+import com.nofirst.ai.code.review.service.reviewer.TaskReviewService;
 import com.taobao.api.ApiException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class ReviewController {
     private final DisruptorService disruptorService;
     private final PushEventMapper pushEventMapper;
     private final PushEventReviewService pushEventReviewService;
+    private final TaskReviewService taskReviewService;
 
     private final IReviewEventTaskDAO reviewResultInfoDAO;
 
@@ -78,8 +80,16 @@ public class ReviewController {
     }
 
     @GetMapping(value = "/review/file")
-    public void reviewFile() throws ApiException, GitLabApiException {
+    public void reviewFile() {
         ReviewConfigInfo reviewConfigInfo = reviewConfigService.fetchValidReviewConfigInfo(1L, null, null);
-        pushEventReviewService.reviewFile(reviewConfigInfo);
+        taskReviewService.reviewFile(reviewConfigInfo,
+                "op-starter/src/main/java/com/hnup/osmp/op/starter/service/operator/OpPhaseTimeService.java",
+                "refs/heads/dev");
+    }
+
+    @GetMapping(value = "/review/project")
+    public void reviewProject() {
+        ReviewConfigInfo reviewConfigInfo = reviewConfigService.fetchValidReviewConfigInfo(1L, null, null);
+        taskReviewService.reviewProject(reviewConfigInfo, "/", "refs/heads/dev");
     }
 }

@@ -9,7 +9,7 @@ public enum ProjectTaskReviewStatusEnum {
 
     ALL_SUCCESS(1, "全部成功"),
 
-    PART_SUCCESS(2, "失败");
+    PART_SUCCESS(2, "部分成功");
 
     private final Integer status;
 

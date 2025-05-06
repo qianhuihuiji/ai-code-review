@@ -42,7 +42,5 @@ public class DingDingService {
         } else {
             log.warn("ding webhook url is empty");
         }
-
-
     }
 }
