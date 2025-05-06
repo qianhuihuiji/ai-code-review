@@ -33,10 +33,10 @@ public class ReviewResultInfoDetail extends Model<ReviewResultInfoDetail> {
     private Long id;
 
     /**
-     * review_result_info 表的主键
+     * xxx_task 表的主键，如review_file_task，review_event_task
      */
-    @TableField("result_id")
-    private Long resultId;
+    @TableField("task_id")
+    private Long taskId;
 
     /**
      * review维度
@@ -61,5 +61,9 @@ public class ReviewResultInfoDetail extends Model<ReviewResultInfoDetail> {
     @TableField("create_time")
     private Date createTime;
 
-
+    /**
+     * 类型，1 event，2 file
+     */
+    @TableField("type")
+    private Integer type;
 }

@@ -3,7 +3,7 @@ package com.nofirst.ai.code.review.service;
 import com.lmax.disruptor.RingBuffer;
 import com.nofirst.ai.code.review.disruptor.MessageModel;
 import com.nofirst.ai.code.review.repository.entity.ReviewConfigInfo;
-import com.nofirst.ai.code.review.repository.entity.ReviewResultInfo;
+import com.nofirst.ai.code.review.repository.entity.ReviewEventTask;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gitlab4j.api.webhook.Event;
@@ -26,9 +26,9 @@ public class DisruptorService {
      *
      * @param event            the event
      * @param reviewConfigInfo the review config info
-     * @param reviewResultInfo the review result info
+     * @param reviewEventTask  the review result info
      */
-    public void sendMsg(Event event, ReviewConfigInfo reviewConfigInfo, ReviewResultInfo reviewResultInfo) {
+    public void sendMsg(Event event, ReviewConfigInfo reviewConfigInfo, ReviewEventTask reviewEventTask) {
         log.info("投递消息，消息内容: {}", event);
         //获取下一个Event槽的下标
         long sequence = messageModelRingBuffer.next();
@@ -38,7 +38,7 @@ public class DisruptorService {
             MessageModel messageModel = messageModelRingBuffer.get(sequence);
             messageModel.setEvent(event);
             messageModel.setReviewConfigInfo(reviewConfigInfo);
-            messageModel.setReviewResultInfo(reviewResultInfo);
+            messageModel.setReviewEventTask(reviewEventTask);
             log.info("往消息队列中添加事件：{}", messageModel);
         } catch (Exception e) {
             log.error("消息发送失败，失败原因 {}", e.getMessage(), e);

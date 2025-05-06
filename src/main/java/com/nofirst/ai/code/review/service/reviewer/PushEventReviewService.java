@@ -3,12 +3,12 @@ package com.nofirst.ai.code.review.service.reviewer;
 import com.nofirst.ai.code.review.model.chat.EvaluationReport;
 import com.nofirst.ai.code.review.model.chat.Issue;
 import com.nofirst.ai.code.review.model.chat.Result;
-import com.nofirst.ai.code.review.model.chat.ReviewStatusEnum;
-import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDAO;
+import com.nofirst.ai.code.review.model.enums.TaskReviewStatusEnum;
+import com.nofirst.ai.code.review.repository.dao.IReviewEventTaskDAO;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDetailDAO;
 import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDetailQuestionDAO;
 import com.nofirst.ai.code.review.repository.entity.ReviewConfigInfo;
-import com.nofirst.ai.code.review.repository.entity.ReviewResultInfo;
+import com.nofirst.ai.code.review.repository.entity.ReviewEventTask;
 import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetail;
 import com.nofirst.ai.code.review.repository.entity.ReviewResultInfoDetailIssue;
 import com.nofirst.ai.code.review.service.DeepseekService;
@@ -42,15 +42,15 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
     private final DingDingService dingDingService;
     private final DeepseekService deepseekService;
 
-    private final IReviewResultInfoDAO reviewResultInfoDAO;
+    private final IReviewEventTaskDAO reviewResultInfoDAO;
     private final IReviewResultInfoDetailDAO reviewResultInfoDetailDAO;
     private final IReviewResultInfoDetailQuestionDAO detailQuestionDAO;
 
 
     @Override
-    public void review(PushEvent pushEvent, ReviewConfigInfo reviewConfig, ReviewResultInfo reviewResultInfo) {
+    public void review(PushEvent pushEvent, ReviewConfigInfo reviewConfig, ReviewEventTask reviewEventTask) {
         log.info("Push Hook event begin review...");
-        this.updateReviewResult(pushEvent, reviewResultInfo);
+        this.updateReviewResult(pushEvent, reviewEventTask);
 
         CompareResults compareResults = this.getCompareResults(pushEvent, reviewConfig);
 
@@ -58,7 +58,7 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
 
         EvaluationReport evaluationReport = EvaluationReportConvertUtil.convertFromChatContent(chatResponse);
 
-        this.storeReviewResult(reviewResultInfo, evaluationReport);
+        this.storeReviewResult(reviewEventTask, evaluationReport);
 
         this.addPushNote(pushEvent, reviewConfig, evaluationReport.getMarkdownContent());
 
@@ -82,26 +82,26 @@ public class PushEventReviewService implements EventReviewer<PushEvent> {
         }
     }
 
-    private void updateReviewResult(PushEvent pushEvent, ReviewResultInfo reviewResultInfo) {
-        reviewResultInfo.setObjectKind(pushEvent.getObjectKind());
-        reviewResultInfo.setUserId(pushEvent.getUserId());
-        reviewResultInfo.setUsername(pushEvent.getUserUsername());
-        reviewResultInfo.setOriginInfo(pushEvent.toString());
+    private void updateReviewResult(PushEvent pushEvent, ReviewEventTask reviewEventTask) {
+        reviewEventTask.setObjectKind(pushEvent.getObjectKind());
+        reviewEventTask.setUserId(pushEvent.getUserId());
+        reviewEventTask.setUsername(pushEvent.getUserUsername());
+        reviewEventTask.setOriginInfo(pushEvent.toString());
 
-        reviewResultInfoDAO.updateById(reviewResultInfo);
+        reviewResultInfoDAO.updateById(reviewEventTask);
     }
 
-    private void storeReviewResult(ReviewResultInfo reviewResultInfo, EvaluationReport evaluationReport) {
-        Date dtNow = reviewResultInfo.getCreateTime();
-        reviewResultInfo.setReviewResult(evaluationReport.getMarkdownContent());
-        reviewResultInfo.setReviewScore(evaluationReport.getTotalScore());
-        reviewResultInfo.setReviewStatus(ReviewStatusEnum.SUCCESS.getStatus());
+    private void storeReviewResult(ReviewEventTask reviewEventTask, EvaluationReport evaluationReport) {
+        Date dtNow = reviewEventTask.getCreateTime();
+        reviewEventTask.setReviewResult(evaluationReport.getMarkdownContent());
+        reviewEventTask.setReviewScore(evaluationReport.getTotalScore());
+        reviewEventTask.setReviewStatus(TaskReviewStatusEnum.SUCCESS.getStatus());
 
-        reviewResultInfoDAO.updateById(reviewResultInfo);
+        reviewResultInfoDAO.updateById(reviewEventTask);
 
         for (Result result : evaluationReport.getResults()) {
             ReviewResultInfoDetail reviewResultInfoDetail = new ReviewResultInfoDetail();
-            reviewResultInfoDetail.setResultId(reviewResultInfo.getId());
+            reviewResultInfoDetail.setTaskId(reviewEventTask.getId());
             reviewResultInfoDetail.setDimension(result.getDimension());
             reviewResultInfoDetail.setReviewScore(result.getScore());
             reviewResultInfoDetail.setFullScore(result.getFullScore());

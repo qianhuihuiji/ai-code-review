@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.nofirst.ai.code.review.mapstruct.PushEventMapper;
-import com.nofirst.ai.code.review.model.chat.ReviewStatusEnum;
+import com.nofirst.ai.code.review.model.enums.TaskReviewStatusEnum;
 import com.nofirst.ai.code.review.model.gitlab.MyPushEvent;
-import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDAO;
+import com.nofirst.ai.code.review.repository.dao.IReviewEventTaskDAO;
 import com.nofirst.ai.code.review.repository.entity.ReviewConfigInfo;
-import com.nofirst.ai.code.review.repository.entity.ReviewResultInfo;
+import com.nofirst.ai.code.review.repository.entity.ReviewEventTask;
 import com.nofirst.ai.code.review.service.DisruptorService;
 import com.nofirst.ai.code.review.service.ReviewConfigService;
 import com.nofirst.ai.code.review.service.reviewer.PushEventReviewService;
@@ -37,7 +37,7 @@ public class ReviewController {
     private final PushEventMapper pushEventMapper;
     private final PushEventReviewService pushEventReviewService;
 
-    private final IReviewResultInfoDAO reviewResultInfoDAO;
+    private final IReviewEventTaskDAO reviewResultInfoDAO;
 
 
     @PostMapping(value = "/review/webhook/{id}")
@@ -61,14 +61,14 @@ public class ReviewController {
                 MyPushEvent myPushEvent = mapper.readValue(jsonStr, MyPushEvent.class);
                 event = pushEventMapper.toPushEvent(myPushEvent);
 
-                ReviewResultInfo reviewResultInfo = new ReviewResultInfo();
-                reviewResultInfo.setCreateTime(dtNow);
-                reviewResultInfo.setConfigId(reviewConfigInfo.getId());
-                reviewResultInfo.setProjectName(reviewConfigInfo.getProjectName());
-                reviewResultInfo.setReviewStatus(ReviewStatusEnum.NOT_STARTED.getStatus());
-                reviewResultInfoDAO.save(reviewResultInfo);
+                ReviewEventTask reviewEventTask = new ReviewEventTask();
+                reviewEventTask.setCreateTime(dtNow);
+                reviewEventTask.setConfigId(reviewConfigInfo.getId());
+                reviewEventTask.setProjectName(reviewConfigInfo.getProjectName());
+                reviewEventTask.setReviewStatus(TaskReviewStatusEnum.NOT_STARTED.getStatus());
+                reviewResultInfoDAO.save(reviewEventTask);
 
-                disruptorService.sendMsg(event, reviewConfigInfo, reviewResultInfo);
+                disruptorService.sendMsg(event, reviewConfigInfo, reviewEventTask);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }

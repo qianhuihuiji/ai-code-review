@@ -1,7 +1,7 @@
 package com.nofirst.ai.code.review.service.reviewer;
 
 import com.nofirst.ai.code.review.repository.entity.ReviewConfigInfo;
-import com.nofirst.ai.code.review.repository.entity.ReviewResultInfo;
+import com.nofirst.ai.code.review.repository.entity.ReviewEventTask;
 import org.gitlab4j.api.webhook.Event;
 import org.gitlab4j.api.webhook.PushEvent;
 
@@ -15,9 +15,9 @@ public interface EventReviewer<E extends Event> {
     /**
      * do code review
      *
-     * @param pushEvent        the webhook event
-     * @param reviewConfig     the review config
-     * @param reviewResultInfo
+     * @param pushEvent       the webhook event
+     * @param reviewConfig    the review config
+     * @param reviewEventTask
      */
-    void review(PushEvent pushEvent, ReviewConfigInfo reviewConfig, ReviewResultInfo reviewResultInfo);
+    void review(PushEvent pushEvent, ReviewConfigInfo reviewConfig, ReviewEventTask reviewEventTask);
 }

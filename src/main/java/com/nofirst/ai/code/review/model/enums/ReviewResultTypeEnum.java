@@ -1,9 +1,9 @@
-package com.nofirst.ai.code.review.model.chat;
+package com.nofirst.ai.code.review.model.enums;
 
 import lombok.Getter;
 
 @Getter
-public enum ReviewStatusEnum {
+public enum ReviewResultTypeEnum {
 
     NOT_STARTED(0, "未开始"),
 
@@ -15,7 +15,7 @@ public enum ReviewStatusEnum {
 
     private final String description;
 
-    ReviewStatusEnum(Integer status, String description) {
+    ReviewResultTypeEnum(Integer status, String description) {
         this.status = status;
         this.description = description;
     }

@@ -10,8 +10,8 @@ import java.util.Date;
 
 
 @Data
-@TableName("review_result_info")
-public class ReviewResultInfo {
+@TableName("review_event_task")
+public class ReviewEventTask {
 
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)

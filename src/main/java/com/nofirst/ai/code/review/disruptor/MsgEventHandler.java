@@ -1,9 +1,9 @@
 package com.nofirst.ai.code.review.disruptor;
 
 import com.lmax.disruptor.EventHandler;
-import com.nofirst.ai.code.review.model.chat.ReviewStatusEnum;
-import com.nofirst.ai.code.review.repository.dao.IReviewResultInfoDAO;
-import com.nofirst.ai.code.review.repository.entity.ReviewResultInfo;
+import com.nofirst.ai.code.review.model.enums.TaskReviewStatusEnum;
+import com.nofirst.ai.code.review.repository.dao.IReviewEventTaskDAO;
+import com.nofirst.ai.code.review.repository.entity.ReviewEventTask;
 import com.nofirst.ai.code.review.service.ReviewDispatcherService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 public class MsgEventHandler implements EventHandler<MessageModel> {
 
     private final ReviewDispatcherService reviewDispatcherService;
-    private final IReviewResultInfoDAO reviewResultInfoDAO;
+    private final IReviewEventTaskDAO reviewResultInfoDAO;
 
 
     @Override
@@ -27,11 +27,11 @@ public class MsgEventHandler implements EventHandler<MessageModel> {
                 reviewDispatcherService.review(messageModel);
             }
         } catch (Exception e) {
-            ReviewResultInfo reviewResultInfo = messageModel.getReviewResultInfo();
-            reviewResultInfo.setReviewStatus(ReviewStatusEnum.FAIL.getStatus());
-            reviewResultInfo.setFailureMsg(e.getMessage());
+            ReviewEventTask reviewEventTask = messageModel.getReviewEventTask();
+            reviewEventTask.setReviewStatus(TaskReviewStatusEnum.FAIL.getStatus());
+            reviewEventTask.setFailureMsg(e.getMessage());
 
-            reviewResultInfoDAO.updateById(reviewResultInfo);
+            reviewResultInfoDAO.updateById(reviewEventTask);
             log.error("消费者处理异常:{}", e.getMessage());
         }
         log.info("消费者处理消息结束");
